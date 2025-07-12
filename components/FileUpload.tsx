@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from 'react';
 import AudioRecorder from './AudioRecorder';
 import Loader from './Loader';
@@ -9,6 +8,7 @@ interface FileUploadProps {
   isProcessing: boolean;
   files: File[];
   progress: { value: number, text: string };
+  isReady: boolean;
 }
 
 const FileIcon: React.FC = () => (
@@ -16,7 +16,7 @@ const FileIcon: React.FC = () => (
 );
 
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, onProcess, isProcessing, files, progress }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, onProcess, isProcessing, files, progress, isReady }) => {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +109,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesChange, onProcess, isPro
         <div className="pt-4">
           <button
             onClick={onProcess}
-            disabled={isProcessing}
+            disabled={isProcessing || !isReady}
             className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isProcessing ? <Loader /> : '🚀'}

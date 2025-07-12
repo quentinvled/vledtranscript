@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppSettings, TranscriptionResult, SummaryResult } from './types';
-import { transcribeAudio, generateSummary } from './services/geminiService';
+import { transcribeAudio, generateSummary, initializeAI, isAIInitialized } from './services/geminiService';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import FileUpload from './components/FileUpload';
@@ -21,25 +21,44 @@ export default function App(): React.ReactNode {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState<{ value: number, text: string }>({ value: 0, text: '' });
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    const storedApiKey = sessionStorage.getItem('gemini-api-key');
-    if (storedApiKey) {
-      setApiKey(storedApiKey);
-    } else {
-      setIsApiKeyModalOpen(true);
+  const handleSetApiKey = useCallback((newKey: string) => {
+    if (!newKey.trim()) {
+        alert("La clé API ne peut pas être vide.");
+        return;
+    }
+    try {
+      initializeAI(newKey);
+      setApiKey(newKey);
+      sessionStorage.setItem('gemini-api-key', newKey);
+      setShowApiKeyModal(false);
+    } catch (error) {
+      console.error(error);
+      alert((error as Error).message);
+      setApiKey(null);
+      sessionStorage.removeItem('gemini-api-key');
     }
   }, []);
-
-  const handleSetApiKey = (key: string) => {
-    const trimmedKey = key.trim();
-    if (trimmedKey) {
-        setApiKey(trimmedKey);
-        sessionStorage.setItem('gemini-api-key', trimmedKey);
-        setIsApiKeyModalOpen(false);
+  
+  useEffect(() => {
+    const storedKey = sessionStorage.getItem('gemini-api-key');
+    if (storedKey) {
+      console.log("Clé API trouvée dans la session.");
+      handleSetApiKey(storedKey);
+      return;
     }
-  };
+
+    const envKey = process.env.API_KEY;
+    if (envKey) {
+        console.log("Clé API trouvée dans les variables d'environnement.");
+        handleSetApiKey(envKey);
+        return;
+    }
+    
+    console.log("Aucune clé API trouvée, ouverture du modal.");
+    setShowApiKeyModal(true);
+  }, [handleSetApiKey]);
 
   const handleSettingsChange = useCallback((newSettings: Partial<AppSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));
@@ -52,10 +71,10 @@ export default function App(): React.ReactNode {
     setErrors({});
   }, []);
 
-  const processFile = async (file: File, key: string, onProgress: (fileName: string) => void): Promise<void> => {
+  const processFile = async (file: File, onProgress: (fileName: string) => void): Promise<void> => {
     try {
       onProgress(`Transcription de ${file.name}...`);
-      const transcriptText = await transcribeAudio(file, settings.language, key);
+      const transcriptText = await transcribeAudio(file, settings.language);
       const newTranscription: TranscriptionResult = {
         text: transcriptText,
         words: transcriptText.split(/\s+/).length,
@@ -67,7 +86,7 @@ export default function App(): React.ReactNode {
         const fileSummaries: SummaryResult = {};
         for (const type of settings.summary_types) {
           onProgress(`Résumé (${type}) pour ${file.name}...`);
-          const summaryText = await generateSummary(transcriptText, type, key);
+          const summaryText = await generateSummary(transcriptText, type);
           fileSummaries[type] = summaryText;
         }
         setSummaries(prev => ({ ...prev, [file.name]: fileSummaries }));
@@ -81,10 +100,9 @@ export default function App(): React.ReactNode {
 
   const handleProcessFiles = useCallback(async () => {
     if (files.length === 0) return;
-
-    if (!apiKey) {
-        alert("Veuillez d'abord configurer votre clé API Gemini.");
-        setIsApiKeyModalOpen(true);
+    if (!isAIInitialized()) {
+        alert("Veuillez configurer votre clé API avant de lancer le traitement.");
+        setShowApiKeyModal(true);
         return;
     }
 
@@ -108,7 +126,7 @@ export default function App(): React.ReactNode {
     
     const promises = filesToProcess.map(file => async () => {
       try {
-        await processFile(file, apiKey, (taskText) => {
+        await processFile(file, (taskText) => {
           updateGlobalProgress(taskText);
         });
       } catch (e) {
@@ -131,11 +149,11 @@ export default function App(): React.ReactNode {
   
   const handleRegenerateSummary = useCallback(async (fileName: string, transcript: string) => {
       if (!transcript) return;
-      if (!apiKey) {
-        alert("Veuillez d'abord configurer votre clé API Gemini.");
-        setIsApiKeyModalOpen(true);
+       if (!isAIInitialized()) {
+        alert("Veuillez configurer votre clé API avant de régénérer un résumé.");
+        setShowApiKeyModal(true);
         return;
-      }
+    }
 
       setIsProcessing(true);
       setProgress({ value: 0, text: `Régénération des résumés pour ${fileName}...` });
@@ -145,7 +163,7 @@ export default function App(): React.ReactNode {
         for (let i = 0; i < summaryTypes.length; i++) {
             const type = summaryTypes[i];
             setProgress({ value: (i / summaryTypes.length) * 100, text: `Génération du résumé ${type}...` });
-            const summaryText = await generateSummary(transcript, type, apiKey);
+            const summaryText = await generateSummary(transcript, type);
             fileSummaries[type] = summaryText;
         }
         setSummaries(prev => ({ ...prev, [fileName]: fileSummaries }));
@@ -160,9 +178,9 @@ export default function App(): React.ReactNode {
 
   return (
     <>
-      <ApiKeyModal isOpen={isApiKeyModalOpen} onSetApiKey={handleSetApiKey} />
+      <ApiKeyModal isOpen={showApiKeyModal} onSetApiKey={handleSetApiKey} />
       <div className="min-h-screen flex flex-col">
-        <Header onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+        <Header onShowApiKeyModal={() => setShowApiKeyModal(true)} />
         <div className="flex-grow flex flex-col md:flex-row container mx-auto p-4 gap-6">
           <aside className="w-full md:w-1/4 lg:w-1/5">
             <Sidebar settings={settings} onSettingsChange={handleSettingsChange} />
@@ -174,6 +192,7 @@ export default function App(): React.ReactNode {
               isProcessing={isProcessing}
               files={files}
               progress={progress}
+              isReady={isAIInitialized()}
             />
             <ResultsDisplay
               transcriptions={transcriptions}

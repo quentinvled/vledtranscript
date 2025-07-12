@@ -2,6 +2,27 @@ import { GoogleGenAI } from "@google/genai";
 import { Language, SummaryType } from "../types";
 import { PROMPTS } from "../constants";
 
+let ai: GoogleGenAI | null = null;
+
+export const initializeAI = (apiKey: string): void => {
+    try {
+        ai = new GoogleGenAI({ apiKey });
+    } catch (error) {
+        console.error("Échec de l'initialisation de GoogleGenAI:", error);
+        ai = null;
+        throw new Error("Impossible d'initialiser le client AI. La clé API est peut-être malformée.");
+    }
+};
+
+export const isAIInitialized = (): boolean => !!ai;
+
+const getAIClient = (): GoogleGenAI => {
+    if (!ai) {
+        throw new Error("Le client AI n'est pas initialisé. Veuillez fournir une clé API valide.");
+    }
+    return ai;
+};
+
 const fileToGenerativePart = async (file: File): Promise<{ inlineData: { mimeType: string; data: string } }> => {
   const base64EncodedData = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -24,11 +45,9 @@ const fileToGenerativePart = async (file: File): Promise<{ inlineData: { mimeTyp
   };
 };
 
-export const transcribeAudio = async (audioFile: File, language: Language, apiKey: string): Promise<string> => {
-    if (!apiKey) throw new Error("La clé API Gemini n'est pas fournie.");
-    
+export const transcribeAudio = async (audioFile: File, language: Language): Promise<string> => {
     try {
-        const ai = new GoogleGenAI({ apiKey });
+        const client = getAIClient();
         const audioPart = await fileToGenerativePart(audioFile);
         const languageInstruction = language === 'auto' 
             ? 'Détecte automatiquement la langue et transcris le contenu audio.' 
@@ -36,7 +55,7 @@ export const transcribeAudio = async (audioFile: File, language: Language, apiKe
         
         const textPart = { text: `Tâche : Transcription Audio. Instruction : ${languageInstruction}. La sortie doit être uniquement le texte transcrit, sans aucun formatage ou commentaire supplémentaire.` };
 
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: [audioPart, textPart] },
             config: {
@@ -51,17 +70,16 @@ export const transcribeAudio = async (audioFile: File, language: Language, apiKe
     }
 };
 
-export const generateSummary = async (transcript: string, summaryType: SummaryType, apiKey: string): Promise<string> => {
-    if (!apiKey) throw new Error("La clé API Gemini n'est pas fournie.");
+export const generateSummary = async (transcript: string, summaryType: SummaryType): Promise<string> => {
     if (!transcript) {
         return "Le texte à résumer est vide.";
     }
     
     try {
-        const ai = new GoogleGenAI({ apiKey });
+        const client = getAIClient();
         const prompt = `${PROMPTS[summaryType]}\n\nTranscription à résumer:\n\n---\n${transcript}\n---`;
         
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: {

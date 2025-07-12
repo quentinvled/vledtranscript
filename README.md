@@ -2,47 +2,55 @@
 
 Bienvenue sur Vled Audio Transcriptor, une application web intelligente pour la transcription et le résumé de fichiers audio, propulsée par l'API Gemini de Google.
 
-Cette application s'exécute entièrement dans votre navigateur. Aucune donnée (ni vos fichiers, ni votre clé API) n'est envoyée ou stockée sur un serveur.
+Cette application s'exécute entièrement dans le navigateur et requiert une clé API Google Gemini pour fonctionner.
 
-## Comment utiliser l'application ?
+## Comment ça marche ?
 
-L'utilisation est très simple et ne nécessite aucune installation complexe.
+L'application offre deux manières de gérer la clé API :
 
----
+1.  **Saisie manuelle (par défaut) :** Au premier lancement, l'application vous demandera votre clé API Gemini. Cette clé est stockée de manière sécurisée dans la **session de votre navigateur** et n'est jamais envoyée ou partagée ailleurs. Elle est conservée tant que votre onglet de navigateur est ouvert.
+2.  **Configuration par l'administrateur :** Pour un déploiement public (par exemple, sur GitHub Pages), le propriétaire du site peut pré-configurer une clé API via des variables d'environnement. Dans ce cas, les utilisateurs finaux n'auront pas besoin de fournir leur propre clé.
 
-### Étape 1 : Obtenir votre Clé API Gemini (Gratuit)
+## Comment lancer le projet localement
 
-Pour que l'application puisse communiquer avec l'intelligence artificielle de Google, vous devez utiliser votre propre clé API. C'est gratuit et rapide à obtenir.
+**Important :** Vous ne pouvez pas simplement ouvrir le fichier `index.html` directement dans votre navigateur (via le protocole `file://`). Vous devez servir l'application via un serveur web local.
 
-1.  **Rendez-vous sur Google AI Studio :**
-    *   Ouvrez ce lien dans votre navigateur : [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+### 1. Avec Python (si vous avez Python installé)
 
-2.  **Connectez-vous :**
-    *   Utilisez votre compte Google personnel pour vous connecter si ce n'est pas déjà fait.
+Ouvrez un terminal dans le dossier du projet et lancez :
 
-3.  **Créez et Copiez votre clé :**
-    *   Cliquez sur le bouton **"Create API key in new project"**.
-    *   Votre clé API va apparaître. C'est une longue chaîne de caractères. **Copiez-la.**
+```bash
+# Pour Python 3
+python -m http.server
+```
+Ensuite, ouvrez votre navigateur à l'adresse : [http://localhost:8000](http://localhost:8000)
 
----
+### 2. Avec Node.js (si vous avez Node.js et npm installés)
 
-### Étape 2 : Lancer l'application et saisir votre clé
+Ouvrez un terminal dans le dossier du projet et lancez :
 
-1.  **Ouvrez l'application :**
-    *   Naviguez vers l'URL où l'application est hébergée.
+```bash
+npx http-server
+```
+Ensuite, ouvrez votre navigateur à l'adresse indiquée (généralement [http://localhost:8080](http://localhost:8080)).
 
-2.  **Saisissez votre clé API :**
-    *   Une fenêtre s'ouvrira automatiquement, vous invitant à coller la clé API que vous venez de copier.
-    *   Collez votre clé et cliquez sur "Enregistrer".
-
-3.  **Stockage sécurisé et temporaire :**
-    *   Votre clé est stockée **uniquement dans votre navigateur** pour la durée de votre session. Si vous fermez l'onglet, vous devrez la saisir à nouveau. Elle n'est jamais partagée.
+Une fois le serveur lancé, l'application vous demandera votre clé API si aucune n'est configurée.
 
 ---
 
-### Étape 3 : Profitez de l'application !
+## Configuration pour le déploiement (ex: GitHub Pages)
 
-Une fois la clé configurée, vous pouvez utiliser toutes les fonctionnalités :
-1.  Uploadez vos fichiers audio ou enregistrez directement depuis le micro.
-2.  Choisissez vos paramètres (langue, résumés...).
-3.  Cliquez sur "TRANSCRIRE" et laissez la magie opérer !
+Pour simplifier l'expérience des visiteurs de votre site, vous pouvez configurer votre propre clé API pour qu'elle soit utilisée par tous.
+
+1.  **Obtenez votre Clé API Gemini :**
+    *   Rendez-vous sur [Google AI Studio](https://aistudio.google.com/app/apikey) et créez votre clé API.
+
+2.  **Configurez un "Secret" sur GitHub :**
+    *   Dans votre dépôt GitHub, allez dans `Settings` > `Secrets and variables` > `Actions`.
+    *   Créez un nouveau "repository secret" avec le nom `API_KEY`.
+    *   Collez votre clé API Gemini comme valeur pour ce secret.
+
+3.  **Utilisez le Secret dans votre Workflow GitHub Actions :**
+    *   Pour que `process.env.API_KEY` soit accessible dans votre code JavaScript, vous devez utiliser un outil de build (comme Vite, Webpack, etc.) qui peut remplacer cette variable par la valeur du secret au moment de la construction du site. L'application est conçue pour détecter et utiliser cette clé si elle est présente.
+
+Si la clé est fournie via ce mécanisme, les utilisateurs ne verront pas la fenêtre de demande de clé API.

@@ -1,15 +1,14 @@
 import React from 'react';
 
-interface HeaderProps {
-  onOpenApiKeyModal: () => void;
-}
-
 const KeyIcon: React.FC = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2"><path d="m21.73 18.27-5.4-5.4C17.22 11.69 18 9.95 18 8A6 6 0 0 0 6 8c0 1.95.78 3.69 1.67 4.87l-5.4 5.4a1 1 0 0 0 0 1.41l2.83 2.83a1 1 0 0 0 1.41 0l5.4-5.4a4.004 4.004 0 0 0 5.66 0l5.4 5.4a1 1 0 0 0 1.41 0l2.83-2.83a1 1 0 0 0 0-1.41z"></path><circle cx="8" cy="8" r="2"></circle></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2"><path d="m21.73 18.27-5.4-5.4C17.52 11.23 18 9.44 18 7.5A5.5 5.5 0 0 0 7.5 2a5.5 5.5 0 0 0-5.46 6.57L2.27 12.3a1.5 1.5 0 0 0 0 2.12l5.4 5.4a1.5 1.5 0 0 0 2.12 0l2.12-2.12 2.12 2.12a1.5 1.5 0 0 0 2.12 0l4.24-4.24a1.5 1.5 0 0 0 0-2.12z"></path><line x1="16" y1="8" x2="16" y2="8"></line></svg>
 );
 
+interface HeaderProps {
+    onShowApiKeyModal: () => void;
+}
 
-const Header: React.FC<HeaderProps> = ({ onOpenApiKeyModal }) => {
+const Header: React.FC<HeaderProps> = ({ onShowApiKeyModal }) => {
   return (
     <header className="w-full shadow-md bg-gradient-to-r from-brand-primary to-brand-secondary">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -21,14 +20,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenApiKeyModal }) => {
             Transcription et résumé audio par IA • Interface optimisée • Export automatique
           </p>
         </div>
-        <button
-          onClick={onOpenApiKeyModal}
-          className="flex-shrink-0 bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-300 flex items-center"
-          aria-label="Changer la clé API"
-        >
-          <KeyIcon />
-          <span>Clé API</span>
-        </button>
+        <div>
+            <button
+                onClick={onShowApiKeyModal}
+                className="flex items-center bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300"
+                aria-label="Changer la clé API"
+            >
+                <KeyIcon />
+                Clé API
+            </button>
+        </div>
       </div>
     </header>
   );
