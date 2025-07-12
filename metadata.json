@@ -1,0 +1,8 @@
+{
+  "name": "Vled Audio Transcriptor",
+  "description": "Une application web intelligente pour la transcription et le résumé de fichiers audio. Optimisée avec l'API Gemini pour des résultats rapides et précis. Vous pouvez soit téléverser des fichiers, soit enregistrer directement depuis votre micro.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}
